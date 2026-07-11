@@ -32,12 +32,14 @@ logged reason.
    repo root → expect `MODEL_VERIFIED=true`. False/error → the executor
    wiring drifted (cc-switch provider changed?); report, don't proceed.
 4. Self-report your model tier. The routine loop (spawn · vet · evidence
-   review) is deliberately shaped to run one tier down (Opus/Sonnet class) —
-   that is the recommended way to protect top-tier quota. But rulings on
-   deviations and the final review are top-tier work: reaching them on a
-   lower tier, set `NEXT: ruling required — resume on the top-tier model`
-   (or `final review pending — top-tier`) and stop. Never rule or sign off
-   below the top tier.
+   review) is deliberately shaped to run on **Sonnet-class** (e.g. Sonnet 5,
+   default effort) — the cheapest tier that handles mechanical vetting, and
+   the recommended way to protect top-tier quota. Rulings on deviations and
+   the final review are **top-tier work (Fable/Opus class)**: an Opus-class
+   session may rule and sign off inline (zero pauses — the fallback when the
+   strongest model's window is exhausted); a Sonnet-class session must set
+   `NEXT: ruling required — resume on a top-tier model` (or `final review
+   pending — top-tier`) and stop. Never rule or sign off below Opus class.
 
 ## 1 · The loop
 
@@ -65,7 +67,10 @@ Repeat until `NEXT:` names the final-review brief or a terminal blocker:
    wake-up after a long executor run re-reads this session's context
    uncached, so batching is what keeps top-tier usage flat. Drop to
    `--loop 1` when the next brief touches security/schema scope or when the
-   previous batch had any failure — those deserve single-brief attention.
+   previous batch had any failure — those deserve single-brief attention —
+   and **always** for brief 01 (contract stubs: everything downstream embeds
+   them, so a defect there multiplies) and for the first brief after any
+   re-plan.
 5. On completion: vet **every brief in the batch** (§2), oldest first. All
    pass → next batch immediately. If an earlier brief of the batch fails
    vetting, reset to the commit **before** it (each brief is exactly one
@@ -148,8 +153,12 @@ The last brief of every plan, and the only thing allowed to declare it done:
 
 ## 5 · Phase close
 
-1. Invoke the **uat-runbook** skill (inputs: charter Manual-prereq registry,
-   the briefs' UAT NOTES + MANUAL PREREQS, STATE evidence).
+1. Finalize the runbook: the second-to-last brief had the executor **draft**
+   it (uat-runbook skill → "Who writes what"). Verify it now — check every
+   command, route, and env-var name against the real code (the drafter may
+   hallucinate; the verifier may not), tighten wording per the eight rules,
+   publish to Notion, report the URL. No draft found (older plan)? Write it
+   yourself per the skill.
 2. Update the charter's phase row → done + date.
 3. If the charter lists a next phase: run phase-kickstart **Stage 2 only**
    (locked answers carry over; genuinely new questions →

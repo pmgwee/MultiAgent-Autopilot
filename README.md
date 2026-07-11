@@ -136,9 +136,18 @@ The desktop plan is the scarce resource; the pipeline is shaped so the genius on
 | All implementation, all briefs | Kickstart interview + plan (one-shot) |
 | Its own verification runs | Vetting diffs + re-running regression (minutes of CPU, few tokens) |
 | **UI evidence: screenshots + console captures per UAT note (Playwright)** | Spot-checking 1–2 screenshots per brief |
-| Chaining briefs (`--loop 3` — one desktop wake-up per batch, not per brief) | Rulings on deviations · **final review with the ONE full browser pass** · the runbook (needs desktop quality + MCP connectors like Notion) |
+| **Runbook draft** (the plan's second-to-last brief) | Runbook **verification** (every command checked against real code) + Notion publish |
+| Chaining briefs (`--loop 3` — one desktop wake-up per batch, not per brief) | Rulings on deviations · **final review with the ONE full browser pass** |
 
-Two extra habits that stretch the 5-hour window a lot: run the routine loop session on a **cheaper desktop model** (Opus/Sonnet) and switch to your strongest only for kickstart, rulings, final review — the skill enforces this floor itself; and prefer **fresh sessions at batch boundaries** (state is on disk, so a new session costs one manifest read instead of re-reading a long conversation).
+**Which desktop model runs what** (the skill enforces the floor itself):
+
+| Desktop model | Role | Why |
+|---|---|---|
+| Sonnet-class (Sonnet 5, default effort) | The routine loop: spawn · vet · evidence review | Cheapest subscription burn; near-Opus on coding/agentic per Anthropic's own docs; pauses itself when a ruling or final review is due |
+| Opus-class (Opus 4.8) | Backup top tier: rules and signs off **inline**, zero pauses | The fallback when your strongest model's window is exhausted |
+| Strongest (Fable-class) | Kickstart interview + plan · hardest rulings · final review | Where judgment quality caps the whole project |
+
+Plus: prefer **fresh sessions at batch boundaries** — state is on disk, so a new session costs one manifest read instead of re-reading a long conversation.
 
 ---
 

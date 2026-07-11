@@ -48,6 +48,19 @@ section types.
    the obvious env-missing cases. Appendix holds one-time SQL/backfills,
    a sample of what the feature's output looks like, and security notes.
 
+## Who writes what (quota-aware split)
+
+- **Inside a handoff plan:** the **executor** (cheap CLI model) drafts the
+  runbook as the plan's second-to-last brief — it fills `TEMPLATE.md` from
+  the inputs above; drafting is diligent assembly, not judgment. The
+  **orchestrator (top-tier)** then verifies at phase close: check every
+  command, route, and env-var name against the real code line by line (the
+  drafter may hallucinate; the verifier may not), tighten wording per the
+  eight rules, and publish to Notion — MCP connectors exist only on the
+  desktop side, so publishing is always the orchestrator's job.
+- **Standalone invocation** (no plan, user asks directly): do all of it
+  yourself in this session.
+
 ## Produce
 
 1. Read `references/TEMPLATE.md`; fill it per the rules above.

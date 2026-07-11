@@ -100,7 +100,11 @@ Planner protocol:
 3. **Premises are CHECK/EXPECT command pairs only** — a premise an executor
    can't run is a defect.
 4. Brief 01 materializes contract stubs (real, compilable, committed code);
-   the last brief is always the **final review** (top-tier only — the
+   the second-to-last brief is the **runbook draft** (executor work: fill
+   the uat-runbook skill's TEMPLATE from the charter's Manual-prereq
+   registry, every brief's UAT NOTES + MANUAL PREREQS, and STATE evidence —
+   the orchestrator only verifies and publishes it at phase close); the
+   last brief is always the **final review** (top-tier only — the
    phase-autopilot skill runs it in-session).
 5. Confidence horizon: if you couldn't write the last brief today with the
    same confidence as the first, plan only the tranche you can see and end it
