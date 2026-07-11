@@ -41,6 +41,10 @@ Exit rule: stop interviewing only when **no remaining answer would change
 code**. Record every answer that changes code in the charter's "Decisions
 locked at kickstart" section — that's what makes them binding on executors.
 
+Save as you go: update the charter draft after **every** interview round —
+an interrupted interview then loses nothing, and re-running phase-kickstart
+resumes from the existing draft instead of re-asking answered questions.
+
 ## Stage 1 — The charter (`docs/charter/PROJECT-CHARTER.md`)
 
 The stable spec. Phases and briefs are cheap derivatives; the charter changes
@@ -186,6 +190,8 @@ CONDUCT
 - The planner's last act: add one line to the project's `CLAUDE.md` —
   "Phase pipeline in `.claude/skills/` — a live plan sits in `handoff/`;
   resume via its NEXT line." Then hand over: tell the user the plan is ready
-  and that `/phase-autopilot` runs it unattended.
+  and that `/phase-autopilot` runs it unattended — and **offer to start it
+  now**: one confirmation and the user can walk away; the executor CLI is
+  never prompted manually.
 - Subsequent phases: re-enter at Stage 2 only (charter answers carry over);
   genuinely new questions go back to Stage 0 — never guessed.

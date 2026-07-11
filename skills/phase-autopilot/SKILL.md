@@ -21,8 +21,13 @@ logged reason.
 
 1. `handoff/00-MANIFEST.md` exists, first line `handoff-plan v1` — else run
    phase-kickstart instead.
-2. `git status --porcelain` is empty. A dirty tree is the user's uncommitted
-   work — surface it and stop; never build on or commit around it.
+2. `git status --porcelain` is empty — with one distinction. If the ledger
+   has an `in-progress` row, the dirt is a **crashed executor run**, not the
+   user's work: show a one-line diff summary, reset to the last
+   `handoff: brief NN` commit, append a STATE entry `crashed — reset by
+   orchestrator`, set the row back to pending, and re-target that brief.
+   No `in-progress` row → it is the user's own uncommitted work: surface it
+   and stop; never build on or commit around it.
 3. Once per session: `node scripts/autopilot/glm-run.mjs --probe` from the
    repo root → expect `MODEL_VERIFIED=true`. False/error → the executor
    wiring drifted (cc-switch provider changed?); report, don't proceed.
