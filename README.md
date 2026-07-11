@@ -1,3 +1,5 @@
+**English** | [简体中文](README.zh-CN.md)
+
 # 🤖 Multiagent Automation — a self-driving phase pipeline for Claude Code
 
 > **TL;DR** — You describe the requirements **once**. A top-tier model interviews you, locks a charter, and writes a self-defending plan. A cheaper CLI model (your cc-switch provider, e.g. GLM) implements every brief **headless** — including proving its own UI work with screenshots — while the top-tier session vets diffs, re-runs verification, and reviews the evidence. You come back to a finished phase and a step-by-step UAT runbook.
