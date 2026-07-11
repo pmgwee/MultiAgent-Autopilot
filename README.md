@@ -151,6 +151,32 @@ Plus: prefer **fresh sessions at batch boundaries** — state is on disk, so a n
 
 ---
 
+## 🎚️ Which desktop model do you pick, and when
+
+> ### The one rule
+> **A running session cannot switch its own model — your desktop model selection is what runs, start to finish.** The skill does **not** auto-downshift to a cheaper model and auto-recall your strongest one. It enforces a *floor*: a cheaper session that hits a ruling or the final review **pauses and asks you to switch up** (`NEXT: ruling required — resume on a top-tier model`) — it never switches for you. So **before every `/phase-autopilot`, glance at the model selector** — that's who runs the next stretch.
+
+Your model choice therefore picks your operating mode:
+
+| Mode | You do | Pauses | Quota burn | Use when |
+|---|---|---|---|---|
+| **A · All Fable 5** | Pick Fable, never switch | Zero (Fable rules + signs off inline) | Highest | **First run** — you want to watch it run start-to-finish without stopping |
+| **B · All Opus 4.8** | Pick Opus, never switch | Zero (Opus is top-tier too — rules + signs off inline) | Moderate | **The set-and-forget default** — never touch the selector, full judgment throughout |
+| **C · Sonnet loop + switch up to sign off** | Sonnet for the loop; switch to Fable/Opus when it pauses for a ruling / final review | One pause per ruling / final review | Lowest | Quota is tight |
+
+**Final review is not Fable-only — Opus 4.8 qualifies as top-tier and can sign off inline.** "Needs top-tier" means Fable *or* Opus, not specifically Fable. Reserve the actual Fable for kickstart planning and the hardest rulings, where peak judgment caps the whole project's quality. Rulings are **rare** (only on deviations / lock-in questions, not per brief) and the final review is **once per phase** — so in a clean phase, Mode C may run the entire loop on Sonnet and only ask you to switch up **once**, at the very end.
+
+### Recommended first-run walkthrough
+
+1. **Kickstart — pick Fable 5**, run `/phase-kickstart`. One-shot, not a loop, thinking-heavy — it barely touches your limit, so use the strongest model for the interview and plan.
+2. When the plan is ready it offers to start autopilot. **First run: stay on Fable (Mode A), say yes.** It runs straight through without pausing; you watch the pipeline's first real outing — format fit, GLM's protocol obedience, the Playwright evidence.
+3. **If Fable hits its limit mid-run:** progress is already on disk (`handoff/` + the `NEXT:` line). Two choices —
+   - Keep it simple and non-stop: switch to **Opus 4.8**, `/phase-autopilot` — it resumes and can sign off itself (Mode B).
+   - Try the cheap mode: switch to **Sonnet 5**, `/phase-autopilot` — the loop runs on Sonnet and pauses at the final review for you to switch up (Mode C).
+4. **From the second phase on:** you trust the pipeline — default to **Mode B (all Opus)** or **Mode C (Sonnet + switch up to sign off)**; no need to babysit on Fable anymore.
+
+---
+
 ## ⏸️ Stopped mid-run? How to resume — read this once
 
 > ### The one rule
@@ -159,7 +185,7 @@ Plus: prefer **fresh sessions at batch boundaries** — state is on disk, so a n
 
 | You stopped because… | What to do |
 |---|---|
-| Desktop (top-tier) usage limit hit | Wait for the window to reset → open desktop → `/phase-autopilot` (a cheaper desktop model can run the loop; the skill pauses by itself when a top-tier ruling or final review is due) |
+| Desktop (top-tier) usage limit hit | Switch to a cheaper desktop model and `/phase-autopilot` — it resumes on whatever you picked (see "Which desktop model do you pick, and when" above); if it's Sonnet-class it pauses and asks you to switch up for the ruling / final review |
 | Side model (GLM) hit its usage limit | The loop pauses itself (`NEXT: awaiting-user — quota`) → when the cooldown ends: `/phase-autopilot` |
 | You closed the laptop / app | Reopen desktop → `/phase-autopilot` |
 | It died in the middle of a brief | Same command — autopilot detects the crashed run (an `in-progress` row + leftover changes), resets to the last good `handoff:` commit, and re-runs that brief |
