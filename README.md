@@ -139,16 +139,6 @@ The desktop plan is the scarce resource; the pipeline is shaped so the genius on
 | **Runbook draft** (the plan's second-to-last brief) | Runbook **verification** (every command checked against real code) + Notion publish |
 | Chaining briefs (`--loop 3` — one desktop wake-up per batch, not per brief) | Rulings on deviations · **final review with the ONE full browser pass** |
 
-**Which desktop model runs what** (the skill enforces the floor itself):
-
-| Desktop model | Role | Why |
-|---|---|---|
-| Sonnet-class (Sonnet 5, default effort) | The routine loop: spawn · vet · evidence review | Cheapest subscription burn; near-Opus on coding/agentic per Anthropic's own docs; pauses itself when a ruling or final review is due |
-| Opus-class (Opus 4.8) | Backup top tier: rules and signs off **inline**, zero pauses | The fallback when your strongest model's window is exhausted |
-| Strongest (Fable-class) | Kickstart interview + plan · hardest rulings · final review | Where judgment quality caps the whole project |
-
-Plus: prefer **fresh sessions at batch boundaries** — state is on disk, so a new session costs one manifest read instead of re-reading a long conversation.
-
 ---
 
 ## 🎚️ Which desktop model do you pick, and when
@@ -165,6 +155,16 @@ Your model choice therefore picks your operating mode:
 | **C · Sonnet loop + switch up to sign off** | Sonnet for the loop; switch to Fable/Opus when it pauses for a ruling / final review | One pause per ruling / final review | Lowest | Quota is tight |
 
 **Final review is not Fable-only — Opus 4.8 qualifies as top-tier and can sign off inline.** "Needs top-tier" means Fable *or* Opus, not specifically Fable. Reserve the actual Fable for kickstart planning and the hardest rulings, where peak judgment caps the whole project's quality. Rulings are **rare** (only on deviations / lock-in questions, not per brief) and the final review is **once per phase** — so in a clean phase, Mode C may run the entire loop on Sonnet and only ask you to switch up **once**, at the very end.
+
+**Which desktop model runs what** (the skill enforces the floor itself):
+
+| Desktop model | Role | Why |
+|---|---|---|
+| Sonnet-class (Sonnet 5, default effort) | The routine loop: spawn · vet · evidence review | Cheapest subscription burn; near-Opus on coding/agentic per Anthropic's own docs; pauses itself when a ruling or final review is due |
+| Opus-class (Opus 4.8) | Backup top tier: rules and signs off **inline**, zero pauses | The fallback when your strongest model's window is exhausted |
+| Strongest (Fable-class) | Kickstart interview + plan · hardest rulings · final review | Where judgment quality caps the whole project |
+
+Plus: prefer **fresh sessions at batch boundaries** — state is on disk, so a new session costs one manifest read instead of re-reading a long conversation.
 
 ### Recommended first-run walkthrough
 
