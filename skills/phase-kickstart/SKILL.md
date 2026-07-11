@@ -154,8 +154,11 @@ improvised around.>
 
 UAT NOTES
 <what a browser walk must show when this brief is done — page → action →
-expected visible result, one line each. The orchestrator drives these in the
-Browser pane; the uat-runbook skill turns the human-only ones into TCs.>
+expected visible result, one line each. The executor demonstrates each note
+itself with evidence files (screenshots + console capture) saved under
+handoff/evidence/; the orchestrator spot-checks them per brief and drives
+everything first-hand once at final review; the uat-runbook skill turns the
+human-only ones into TCs.>
 
 MANUAL PREREQS
 <"none", or human-only setup this brief assumes (bot created, key pasted).

@@ -1,6 +1,6 @@
 # 🤖 Multiagent Automation — a self-driving phase pipeline for Claude Code
 
-> **TL;DR** — You describe the requirements **once**. A top-tier model interviews you, locks a charter, and writes a self-defending plan. A cheaper CLI model (your cc-switch provider, e.g. GLM) implements every brief **headless** while the top-tier session verifies each one — re-running builds, walking the real UI in a browser, reviewing like a senior engineer. You come back to a finished phase and a step-by-step UAT runbook.
+> **TL;DR** — You describe the requirements **once**. A top-tier model interviews you, locks a charter, and writes a self-defending plan. A cheaper CLI model (your cc-switch provider, e.g. GLM) implements every brief **headless** — including proving its own UI work with screenshots — while the top-tier session vets diffs, re-runs verification, and reviews the evidence. You come back to a finished phase and a step-by-step UAT runbook.
 > **You appear exactly twice: the requirements interview, and the final manual setup + review.**
 
 Adapted from [pinjun99/Sildenafil_coding](https://github.com/pinjun99/Sildenafil_coding) (orchestrator · advisor · handoff, MIT) — the three patterns fused into one pipeline and wired to a two-subscription setup (Anthropic top-tier + a cc-switch side model).
@@ -13,7 +13,7 @@ Adapted from [pinjun99/Sildenafil_coding](https://github.com/pinjun99/Sildenafil
 |---|---|
 | A solo builder running Claude Code desktop (top-tier model) + a cheaper coding model in the CLI | Babysitting two windows, copy-pasting prompts between them all day |
 | Someone whose "v1" keeps landing as a prototype, not production | Every phase — including the first scaffold — is gated by the same Definition of Done |
-| Someone who finds the bugs only during their own manual UAT | The pipeline walks the UI itself (browser, console, network, mobile, dark mode) before you ever look |
+| Someone who finds the bugs only during their own manual UAT | The executor proves every UI change with screenshots + console captures; the top-tier model signs off with one full browser pass per phase |
 | Someone tired of ad-hoc, non-standard testing docs | Every phase ends with a runbook in one fixed, guide-to-guide format |
 
 **Requires:** Claude Code ≥ 2.x (desktop + CLI) · Node ≥ 22.5 · [cc-switch](https://github.com/farion1231/cc-switch) with your second provider configured · git.
@@ -25,9 +25,9 @@ Adapted from [pinjun99/Sildenafil_coding](https://github.com/pinjun99/Sildenafil
 | Piece | Job |
 |---|---|
 | `skills/phase-kickstart` | Interrogates requirements across 8 domains → `PROJECT-CHARTER.md` → a `handoff/` plan (manifest · contracts · numbered briefs · STATE journal). All architecture is decided here; executors never choose. |
-| `skills/phase-autopilot` | The unattended loop: spawns the CLI model per brief, vets its diff ("reports are leads, not facts"), re-runs verification itself, browser-walks each brief's UAT NOTES, rules on deviations (`ADVISOR.md`), runs the final review. Resumable from the manifest's `NEXT:` line — any session, any day. |
+| `skills/phase-autopilot` | The unattended loop: spawns the CLI model in batches, vets its diffs ("reports are leads, not facts"), re-runs verification itself, reviews the executor's UI evidence, rules on deviations (`ADVISOR.md`), and does the one full hands-on browser pass at final review. Resumable from the manifest's `NEXT:` line — any session, any day. |
 | `skills/uat-runbook` | Turns what genuinely needs a human (bots, webhooks, secrets, deploy clicks) into a TL;DR → Prerequisites → Localhost UAT → Production → Troubleshooting runbook with TC checkboxes. |
-| `scripts/autopilot/glm-run.mjs` | The bridge between your two models: reads your side model's env from cc-switch **per-process** (never flips your global switch), pipes the prompt via **stdin** (Windows-safe), and **fails loud — exit 3 — if the answering model isn't the one you expect** (`MODEL_VERIFIED`). |
+| `scripts/autopilot/glm-run.mjs` | The bridge between your two models: reads your side model's env from cc-switch **per-process** (never flips your global switch), pipes the prompt via **stdin** (Windows-safe), **fails loud — exit 3 — if the answering model isn't the one you expect** (`MODEL_VERIFIED`), and with `--loop N` chains up to N consecutive briefs by itself. |
 
 ## 🔁 The flow
 
@@ -36,14 +36,17 @@ requirements ─► /phase-kickstart   (you answer questions ONCE → charter + 
                        │
                        ▼
                /phase-autopilot    (walk away)
-               ┌─────────────────────────────────┐
-               │ per brief:                      │
-               │   CLI model implements headless │
-               │   top-tier vets diff, re-runs   │
-               │   verification, browser gate    │
-               │   fix → respawn once → absorb   │
-               │ final review (top-tier only)    │
-               └─────────────────────────────────┘
+               ┌──────────────────────────────────────┐
+               │ per batch (--loop 3):                │
+               │   CLI model implements headless AND  │
+               │   captures its own UI evidence       │
+               │   (screenshots + console, Playwright)│
+               │   top-tier vets diffs + evidence,    │
+               │   re-runs verification               │
+               │   fix → respawn once → absorb        │
+               │ final review = the ONE full hands-on │
+               │ browser pass (top-tier only)         │
+               └──────────────────────────────────────┘
                        │
                        ▼
                /uat-runbook  →  you: manual prereqs + final look + deploy
@@ -112,15 +115,30 @@ node scripts/autopilot/glm-run.mjs --probe
 ## ▶️ Use
 
 **Step 1 · Kickstart — stay at the keyboard (the ONE stage that needs you)**
-In **Claude Code desktop**: `/phase-kickstart` + your requirements/rubrics/success criteria.
+In **Claude Code desktop** on your strongest model: `/phase-kickstart` + your requirements/rubrics/success criteria.
 ✅ **Expected:** rounds of pointed questions → `docs/charter/PROJECT-CHARTER.md` + a `handoff/` plan whose manifest ends with `NEXT: execute brief 01`. When the plan is ready it **offers to start autopilot immediately** — say yes and walk away.
 
 **Step 2 · Autopilot — hands off**
 (If you didn't say yes above:) `/phase-autopilot`
-✅ **Expected:** briefs execute one by one — the desktop session spawns the CLI model itself; **you never type into the CLI/VS Code window again**. Every commit reads `handoff: brief NN <state>`; UI briefs get browser-walked with screenshot evidence.
+✅ **Expected:** briefs execute in batches of ~3 — the desktop session spawns the CLI model itself; **you never type into the CLI/VS Code window again**. Every commit reads `handoff: brief NN <state>`; every UI brief leaves screenshot + console evidence in `handoff/evidence/`.
 
 **Step 3 · Come back**
 Open `docs/runbooks/<phase>-runbook.md`, do the checkboxes (the only human-required steps), final look, deploy.
+
+---
+
+## 💰 Protecting your top-tier quota
+
+The desktop plan is the scarce resource; the pipeline is shaped so the genius only signs, never sweats:
+
+| Burns the side model (GLM) | Burns the top-tier desktop plan |
+|---|---|
+| All implementation, all briefs | Kickstart interview + plan (one-shot) |
+| Its own verification runs | Vetting diffs + re-running regression (minutes of CPU, few tokens) |
+| **UI evidence: screenshots + console captures per UAT note (Playwright)** | Spot-checking 1–2 screenshots per brief |
+| Chaining briefs (`--loop 3` — one desktop wake-up per batch, not per brief) | Rulings on deviations · **final review with the ONE full browser pass** · the runbook (needs desktop quality + MCP connectors like Notion) |
+
+Two extra habits that stretch the 5-hour window a lot: run the routine loop session on a **cheaper desktop model** (Opus/Sonnet) and switch to your strongest only for kickstart, rulings, final review — the skill enforces this floor itself; and prefer **fresh sessions at batch boundaries** (state is on disk, so a new session costs one manifest read instead of re-reading a long conversation).
 
 ---
 
@@ -132,8 +150,8 @@ Open `docs/runbooks/<phase>-runbook.md`, do the checkboxes (the only human-requi
 
 | You stopped because… | What to do |
 |---|---|
-| Desktop (top-tier) usage limit hit | Wait for the window to reset → open desktop → `/phase-autopilot` |
-| Side model (GLM) hit its 5-hour limit | The loop pauses itself (`NEXT: awaiting-user — quota`) → when the cooldown ends: `/phase-autopilot` |
+| Desktop (top-tier) usage limit hit | Wait for the window to reset → open desktop → `/phase-autopilot` (a cheaper desktop model can run the loop; the skill pauses by itself when a top-tier ruling or final review is due) |
+| Side model (GLM) hit its usage limit | The loop pauses itself (`NEXT: awaiting-user — quota`) → when the cooldown ends: `/phase-autopilot` |
 | You closed the laptop / app | Reopen desktop → `/phase-autopilot` |
 | It died in the middle of a brief | Same command — autopilot detects the crashed run (an `in-progress` row + leftover changes), resets to the last good `handoff:` commit, and re-runs that brief |
 | The kickstart interview got cut off | `/phase-kickstart` again — the charter is saved after every question round, so no answers are lost |
@@ -149,11 +167,13 @@ Open `docs/runbooks/<phase>-runbook.md`, do the checkboxes (the only human-requi
 | Autopilot refuses to start | Dirty git tree that is **your own** uncommitted work — commit/stash it first (crashed pipeline runs are recovered automatically; your work is never touched) |
 | Loop paused: `awaiting-user — quota` | Side model's subscription exhausted → just rerun `/phase-autopilot` later |
 | Same brief failing repeatedly | By design: respawned once, then absorbed by the top-tier session; two absorbs in one phase = your briefs are sliced too big — re-plan |
+| Executor's first Playwright run is slow | One-time browser download per machine — expected, cached afterwards |
 
 ## 🔐 Notes
 
 - `glm-run.mjs` never prints or logs your auth token.
 - Headless briefs run with permissions bypassed **inside your repo** — keep everything under git; each brief lands exactly one attributable commit, so anything is revertible.
+- UI evidence lives in `handoff/evidence/brief-NN/` (screenshots, console captures, the throwaway test scripts) — local artifacts, gitignored wherever `handoff/` is.
 - Other cc-switch providers (Kimi, Qwen, …): `--provider "<regex>"` already selects them, but today's `MODEL_VERIFIED` gate expects GLM/Zhipu model ids — other providers need a one-line tweak to that check (planned; GLM-first for now).
 - Skills are plain markdown: edit them, they're yours. Project-specific rules belong in each project's `CLAUDE.md` (the executor protocol treats that file as binding).
 

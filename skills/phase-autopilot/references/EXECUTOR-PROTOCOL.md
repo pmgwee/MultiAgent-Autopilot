@@ -64,6 +64,25 @@ record. (Adapted from the `handoff` skill in pinjun99/Sildenafil_coding, MIT.)
   backend, wait and retry the request; if it persists, land `paused-mid-brief`
   with a note. Never mutate code to work around your own tooling.
 
+## UI evidence (briefs with UAT NOTES)
+
+You demonstrate your own UI work — the orchestrator only reviews your
+artifacts per brief and drives everything first-hand once, at final review.
+For every line in your brief's UAT NOTES:
+
+- Drive the real app and capture proof into `handoff/evidence/brief-NN/`:
+  one screenshot per note (named after the note), plus a console/network
+  error capture — both must be clean on the walked flow.
+- Default recipe: a throwaway Playwright script (write it, run it, keep the
+  script in the evidence folder for audit). If the project ships its own
+  browser/E2E tooling, use that instead. A first Playwright run on a machine
+  may download browsers once — expected, not an error.
+- Start the dev server yourself on a non-default port (e.g. 3100) so you
+  never collide with the user's own server; kill it when done.
+- List every evidence file in your STATE entry. A UAT note without an
+  evidence file is an unverified note → the brief is **not**
+  done-and-verified.
+
 ## Conduct
 
 - Do exactly the scope; nothing else.
