@@ -1,11 +1,11 @@
-**English** | [简体中文](README.zh-CN.md)
+ **English** | [简体中文](README.zh-CN.md)
 
 # 🤖 Multiagent Automation — a self-driving phase pipeline for Claude Code
 
 > **TL;DR** — You describe the requirements **once**. A top-tier model interviews you, locks a charter, and writes a self-defending plan. A cheaper CLI model (your cc-switch provider, e.g. GLM) implements every brief **headless** — including proving its own UI work with screenshots — while the top-tier session vets diffs, re-runs verification, and reviews the evidence. You come back to a finished phase and a step-by-step UAT runbook.
 > **You appear exactly twice: the requirements interview, and the final manual setup + review.**
 
-Adapted from [pinjun99/Sildenafil_coding](https://github.com/pinjun99/Sildenafil_coding) (orchestrator · advisor · handoff, MIT) — the three patterns fused into one pipeline and wired to a two-subscription setup (Anthropic top-tier + a cc-switch side model).
+Adapted from (orchestrator · advisor · handoff) — the three patterns fused into one pipeline and wired to a two-subscription setup (Anthropic top-tier + a cc-switch side model).
 
 ---
 
@@ -216,4 +216,4 @@ Plus: prefer **fresh sessions at batch boundaries** — state is on disk, so a n
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Portions adapted from [pinjun99/Sildenafil_coding](https://github.com/pinjun99/Sildenafil_coding) (MIT).
+MIT — see [LICENSE](LICENSE). 
