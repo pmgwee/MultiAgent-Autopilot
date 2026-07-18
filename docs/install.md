@@ -1,6 +1,6 @@
-# multiagent-automation — agent install guide
+# MultiAgent-Autopilot — agent install guide
 
-You are an AI coding agent installing the **multiagent-automation** skill
+You are an AI coding agent installing the **MultiAgent-Autopilot** skill
 suite for your user. Follow the steps in order; ask the user before anything
 ambiguous; report real command output, never assumed success.
 
@@ -24,11 +24,11 @@ ambiguous; report real command output, never assumed success.
 ## 2 · Get the code
 
 ```bash
-git clone https://github.com/pmgwee/multiagent-automation
+git clone https://github.com/pmgwee/MultiAgent-Autopilot
 ```
 
 No git? Download and unzip:
-`https://github.com/pmgwee/multiagent-automation/archive/refs/heads/main.zip`
+`https://github.com/pmgwee/MultiAgent-Autopilot/archive/refs/heads/main.zip`
 
 ## 3 · Copy files
 
@@ -40,7 +40,16 @@ PowerShell: `Copy-Item -Recurse`; or your own file tools).
 
 ## 4 · Verify the wiring
 
-From the **project root**:
+From the **project root**, first the free check (resolves the provider,
+spawns nothing, spends nothing):
+
+```bash
+node scripts/autopilot/glm-run.mjs --dry-run
+```
+
+✅ Success = the GLM provider's name + base URL and `tokenLen` > 0.
+
+Then the live probe (one tiny GLM call):
 
 ```bash
 node scripts/autopilot/glm-run.mjs --probe

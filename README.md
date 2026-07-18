@@ -1,6 +1,6 @@
  **English** | [简体中文](README.zh-CN.md)
 
-# 🤖 Multiagent Automation — a self-driving phase pipeline for Claude Code
+# 🤖 MultiAgent Autopilot — a self-driving phase pipeline for Claude Code
 
 > **TL;DR** — You describe the requirements **once**. A top-tier model interviews you, locks a charter, and writes a self-defending plan. A cheaper CLI model (your cc-switch provider, e.g. GLM) implements every brief **headless** — including proving its own UI work with screenshots — while the top-tier session vets diffs, re-runs verification, and reviews the evidence. You come back to a finished phase and a step-by-step UAT runbook.
 > **You appear exactly twice: the requirements interview, and the final manual setup + review.**
@@ -18,7 +18,7 @@ Adapted from (orchestrator · advisor · handoff) — the three patterns fused i
 | Someone who finds the bugs only during their own manual UAT | The executor proves every UI change with screenshots + console captures; the top-tier model signs off with one full browser pass per phase |
 | Someone tired of ad-hoc, non-standard testing docs | Every phase ends with a runbook in one fixed, guide-to-guide format |
 
-**Requires:** Claude Code ≥ 2.x (desktop + CLI) · Node ≥ 22.5 · [cc-switch](https://github.com/farion1231/cc-switch) with your second provider configured · git.
+**Requires:** Claude Code ≥ 2.x (desktop + CLI) · Node ≥ 22.5 · [cc-switch](https://github.com/farion1231/cc-switch) with your GLM provider configured · git.
 
 ---
 
@@ -29,7 +29,7 @@ Adapted from (orchestrator · advisor · handoff) — the three patterns fused i
 | `skills/phase-kickstart` | Interrogates requirements across 8 domains → `PROJECT-CHARTER.md` → a `handoff/` plan (manifest · contracts · numbered briefs · STATE journal). All architecture is decided here; executors never choose. |
 | `skills/phase-autopilot` | The unattended loop: spawns the CLI model in batches, vets its diffs ("reports are leads, not facts"), re-runs verification itself, reviews the executor's UI evidence, rules on deviations (`ADVISOR.md`), and does the one full hands-on browser pass at final review. Resumable from the manifest's `NEXT:` line — any session, any day. |
 | `skills/uat-runbook` | Turns what genuinely needs a human (bots, webhooks, secrets, deploy clicks) into a TL;DR → Prerequisites → Localhost UAT → Production → Troubleshooting runbook with TC checkboxes. |
-| `scripts/autopilot/glm-run.mjs` | The bridge between your two models: reads your side model's env from cc-switch **per-process** (never flips your global switch), pipes the prompt via **stdin** (Windows-safe), **fails loud — exit 3 — if the answering model isn't the one you expect** (`MODEL_VERIFIED`), and with `--loop N` chains up to N consecutive briefs by itself. |
+| `scripts/autopilot/glm-run.mjs` | The bridge between your two models: reads your GLM env from cc-switch **per-process** (never flips your global switch), pipes the prompt via **stdin** (Windows-safe), **fails loud — exit 3 — if the answering model isn't GLM** (`MODEL_VERIFIED`), chains up to N consecutive briefs with `--loop N` — **stopping the chain the moment a run fails to advance `NEXT:`** (`LOOP_STALLED`) — and ships `--dry-run` (free wiring check), `--json` (machine-readable results), and its own unit tests. |
 
 ## 🔁 The flow
 
@@ -65,8 +65,8 @@ The two models never share chat memory — **the repo is the shared memory** (ch
 Paste this one prompt into Claude Code (desktop or CLI — any agent with file + shell access):
 
 ```
-Help me install the multiagent-automation skills:
-https://raw.githubusercontent.com/pmgwee/multiagent-automation/main/docs/install.md
+Help me install the MultiAgent-Autopilot skills:
+https://raw.githubusercontent.com/pmgwee/MultiAgent-Autopilot/main/docs/install.md
 ```
 
 The agent reads the guide, asks you two questions (global or per-project skills? which project gets the runner?), copies everything, and probes the wiring.
@@ -74,18 +74,18 @@ The agent reads the guide, asks you two questions (global or per-project skills?
 
 ### Option B — manual (5 minutes)
 
-- [ ] **1. Get the code** — `git clone https://github.com/pmgwee/multiagent-automation`, or **Code → Download ZIP** and unzip it.
+- [ ] **1. Get the code** — `git clone https://github.com/pmgwee/MultiAgent-Autopilot`, or **Code → Download ZIP** and unzip it.
 
 - [ ] **2. Copy the skills** — global (all projects) or into one project's `.claude/skills/`:
 
 ```bash
 # macOS / Linux / Git Bash — global:
-cp -r multiagent-automation/skills/* ~/.claude/skills/
+cp -r MultiAgent-Autopilot/skills/* ~/.claude/skills/
 ```
 
 ```powershell
 # Windows PowerShell — global:
-Copy-Item -Recurse multiagent-automation\skills\* "$env:USERPROFILE\.claude\skills\"
+Copy-Item -Recurse MultiAgent-Autopilot\skills\* "$env:USERPROFILE\.claude\skills\"
 ```
 
 - [ ] **3. Copy the runner into EACH project that will use the pipeline** — the headless executor session starts in that project's root, and its logs/commits belong to that repo, so the runner lives inside the project:
@@ -93,16 +93,24 @@ Copy-Item -Recurse multiagent-automation\skills\* "$env:USERPROFILE\.claude\skil
 ```bash
 # macOS / Linux / Git Bash:
 mkdir -p <your-project>/scripts/autopilot
-cp multiagent-automation/scripts/autopilot/glm-run.mjs <your-project>/scripts/autopilot/
+cp MultiAgent-Autopilot/scripts/autopilot/glm-run.mjs <your-project>/scripts/autopilot/
 ```
 
 ```powershell
 # Windows PowerShell:
 New-Item -ItemType Directory -Force <your-project>\scripts\autopilot
-Copy-Item multiagent-automation\scripts\autopilot\glm-run.mjs <your-project>\scripts\autopilot\
+Copy-Item MultiAgent-Autopilot\scripts\autopilot\glm-run.mjs <your-project>\scripts\autopilot\
 ```
 
-- [ ] **4. Probe the wiring** (from the project root — any terminal):
+- [ ] **4. Dry-run the wiring** (free — resolves the provider and prints exactly what would run; spawns nothing, spends nothing):
+
+```bash
+node scripts/autopilot/glm-run.mjs --dry-run
+```
+
+✅ **Expected:** your GLM provider's name + base URL and a `tokenLen` > 0.
+
+- [ ] **5. Probe the wiring** (one tiny GLM call, from the project root — any terminal):
 
 ```bash
 node scripts/autopilot/glm-run.mjs --probe
@@ -110,7 +118,7 @@ node scripts/autopilot/glm-run.mjs --probe
 
 ✅ **Expected:** `MODEL_VERIFIED=true` and your side model's id (e.g. `glm-5.2`). Anything else → Troubleshooting below.
 
-> 💡 Different side model? `--provider "<regex>"` selects any cc-switch entry by name/URL.
+> 💡 Renamed your GLM entry in cc-switch? `--provider "<regex>"` selects it by name/URL; `--expect-model "<regex>"` tracks changed GLM model ids.
 
 ---
 
@@ -205,13 +213,15 @@ Plus: prefer **fresh sessions at batch boundaries** — state is on disk, so a n
 | Loop paused: `awaiting-user — quota` | Side model's subscription exhausted → just rerun `/phase-autopilot` later |
 | Same brief failing repeatedly | By design: respawned once, then absorbed by the top-tier session; two absorbs in one phase = your briefs are sliced too big — re-plan |
 | Executor's first Playwright run is slow | One-time browser download per machine — expected, cached afterwards |
+| `LOOP_STALLED` in the runner output | A run exited 0 but never advanced `NEXT:` — the executor drifted from the protocol → autopilot treats that brief as failed vetting and takes the failure ladder; nothing for you to do |
 
 ## 🔐 Notes
 
 - `glm-run.mjs` never prints or logs your auth token.
 - Headless briefs run with permissions bypassed **inside your repo** — keep everything under git; each brief lands exactly one attributable commit, so anything is revertible.
 - UI evidence lives in `handoff/evidence/brief-NN/` (screenshots, console captures, the throwaway test scripts) — local artifacts, gitignored wherever `handoff/` is.
-- Other cc-switch providers (Kimi, Qwen, …): `--provider "<regex>"` already selects them, but today's `MODEL_VERIFIED` gate expects GLM/Zhipu model ids — other providers need a one-line tweak to that check (planned; GLM-first for now).
+- **Scope is deliberate: two models, one wire.** This pipeline is built for exactly one setup — Claude top-tier in Claude Code desktop + a GLM-routed Claude Code CLI via cc-switch. `--provider` / `--expect-model` exist to track renamed GLM entries and future GLM model ids, not to add other vendors.
+- The runner ships its own tests (pure logic — no tokens spent): `node --test scripts/autopilot/glm-run.test.mjs`. Run them after any edit to `glm-run.mjs`.
 - Skills are plain markdown: edit them, they're yours. Project-specific rules belong in each project's `CLAUDE.md` (the executor protocol treats that file as binding).
 
 ## License

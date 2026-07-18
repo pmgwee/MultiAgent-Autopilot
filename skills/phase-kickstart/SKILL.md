@@ -72,6 +72,9 @@ Planner: <exact model ID> · <date>
   policy, SSR determinism, …) — restate the ones this phase touches
 - Stress: <profile from interrogation — rows, concurrency, slow network>
 - Security: per-user data scoping verified, secrets server-side only
+- Release: build + lint + typecheck clean; error paths show user-legible
+  messages, never raw stack traces; no secret or server-only value reaches
+  the client bundle
 - Evidence: browser-walk screenshots + verification output in handoff/STATE.md
 - Runbook: uat-runbook generated for the phase
 

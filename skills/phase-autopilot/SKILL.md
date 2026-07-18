@@ -30,7 +30,9 @@ logged reason.
    and stop; never build on or commit around it.
 3. Once per session: `node scripts/autopilot/glm-run.mjs --probe` from the
    repo root → expect `MODEL_VERIFIED=true`. False/error → the executor
-   wiring drifted (cc-switch provider changed?); report, don't proceed.
+   wiring drifted (cc-switch provider changed?); run `--dry-run` (free — it
+   prints the resolved provider and command without spawning anything) to
+   see what broke; report, don't proceed.
 4. Self-report your model tier. The routine loop (spawn · vet · evidence
    review) is deliberately shaped to run on **Sonnet-class** (e.g. Sonnet 5,
    default effort) — the cheapest tier that handles mechanical vetting, and
@@ -90,6 +92,9 @@ per brief:
 
 - `MODEL_VERIFIED=true` and exit 0 — anything else means the diff is
   untrusted output, not a result (ladder).
+- A `LOOP_STALLED` line means a run exited 0 but left `NEXT:` on the very
+  brief it just ran — the executor "succeeded" without landing a terminal
+  state. Treat that brief as failed vetting (ladder), never as done.
 - STATE.md gained a terminal entry, model ID on line 1; ledger row and
   `NEXT:` are consistent (fix drift yourself; STATE wins).
 - `git log --grep "handoff: brief NN"` finds exactly the expected commit;
@@ -119,10 +124,14 @@ per brief:
    in-session yourself; append a STATE entry marked `absorbed by
    orchestrator` with the reason.
 3. **Deviation on a lock-in/security question:** you are also the advisor —
-   rule on it now, log the ruling in `ADVISOR.md` (date · question · ruling ·
-   reasoning · premises), update the brief, re-spawn once. Rulings are
-   reusable leads for later briefs — but security triggers always get fresh
-   eyes, never a cached pass.
+   but never judge as the same context that wants the pipeline moving. First
+   spawn one fresh-context subagent (Agent tool) whose only job is to REFUTE
+   the deviation and your intended ruling; rule only after its strongest
+   objection is answered or absorbed. Log the ruling in `ADVISOR.md` (date ·
+   question · ruling · reasoning · premises · the skeptic's strongest
+   objection), update the brief, re-spawn once. Rulings are reusable leads
+   for later briefs — but security triggers always get fresh eyes, never a
+   cached pass.
 4. **Provider limits (429/quota):** not a code failure — retry once after a
    cooldown via a background run; a second limit failure pauses the loop
    (`NEXT: awaiting-user — executor quota exhausted`).
@@ -164,7 +173,9 @@ The last brief of every plan, and the only thing allowed to declare it done:
    (locked answers carry over; genuinely new questions →
    `NEXT: awaiting-user`, never guessed) and continue the loop.
 4. Report: per-brief table (state · commit · model · duration), rulings and
-   absorptions with reasons, runbook path, and the `NEXT:` line verbatim.
+   absorptions with reasons, every `FINDINGS:` line collected from STATE.md
+   (out-of-scope leads — they seed the next kickstart), runbook path, and
+   the `NEXT:` line verbatim.
 
 ## 6 · Top-tier budget discipline
 

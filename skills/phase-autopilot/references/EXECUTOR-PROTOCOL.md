@@ -39,7 +39,10 @@ record. (Adapted from the `handoff` skill in pinjun99/Sildenafil_coding, MIT.)
    `paused-mid-brief` — in this order:
    - a. Append the STATE entry (model ID on line 1; the state name; on success
      quote only each verification's summary line; on failure or surprise quote
-     up to ~40 lines, fenced).
+     up to ~40 lines, fenced). You may end the entry with `FINDINGS:` — one
+     line per out-of-scope observation (suspected bug, dead code, doc drift)
+     you noticed but did not touch. Findings are leads for the planner, never
+     a license to act on them yourself.
    - b. Update your ledger row (record your commit SHA when done).
    - c. Update `NEXT:` — `execute brief NN+1` · `re-plan required — <reason>` ·
      `plan done pending final review`.
