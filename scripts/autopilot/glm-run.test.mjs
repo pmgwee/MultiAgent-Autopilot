@@ -8,6 +8,8 @@ import {
   providerCandidates,
   verifyModels,
   standardPrompt,
+  extractUsage,
+  sumUsage,
 } from "./glm-run.mjs";
 
 // ---------------------------------------------------------------- parseNextLine
@@ -135,4 +137,62 @@ test("providerCandidates: malformed settings_config never throws, row is skipped
 test("providerCandidates: null/empty rows never throw", () => {
   assert.deepEqual(providerCandidates(null, PROVIDER_RE), []);
   assert.deepEqual(providerCandidates([], PROVIDER_RE), []);
+});
+
+// ---------------------------------------------------------------- extractUsage
+
+test("extractUsage: sums modelUsage values (camelCase CLI shape)", () => {
+  const u = extractUsage({
+    modelUsage: {
+      "glm-5.2": { inputTokens: 100, outputTokens: 40, cacheReadInputTokens: 900, cacheCreationInputTokens: 30 },
+      "glm-4.6": { inputTokens: 10, outputTokens: 5, cacheReadInputTokens: 0, cacheCreationInputTokens: 0 },
+    },
+    total_cost_usd: 0.1234,
+  });
+  assert.deepEqual(u, { input: 110, output: 45, cacheRead: 900, cacheCreate: 30, costUsd: 0.1234 });
+});
+
+test("extractUsage: falls back to the top-level usage object (snake_case)", () => {
+  const u = extractUsage({
+    usage: { input_tokens: 7, output_tokens: 3, cache_read_input_tokens: 2, cache_creation_input_tokens: 1 },
+  });
+  assert.deepEqual(u, { input: 7, output: 3, cacheRead: 2, cacheCreate: 1, costUsd: null });
+});
+
+test("extractUsage: null / missing fields never throw, report zeros", () => {
+  const zero = { input: 0, output: 0, cacheRead: 0, cacheCreate: 0, costUsd: null };
+  assert.deepEqual(extractUsage(null), zero);
+  assert.deepEqual(extractUsage({}), zero);
+  assert.deepEqual(extractUsage({ modelUsage: { "glm-5.2": {} } }), zero);
+});
+
+// -------------------------------------------------------------------- sumUsage
+
+test("sumUsage: grand totals + per-brief buckets", () => {
+  const t = sumUsage([
+    { brief: "01", input: 10, output: 5, cacheRead: 100, cacheCreate: 0, costUsd: 0.01 },
+    { brief: "01", input: 20, output: 10, cacheRead: 0, cacheCreate: 0 },
+    { brief: "02", input: 1, output: 1, cacheRead: 1, cacheCreate: 1, costUsd: 0.02 },
+  ]);
+  assert.equal(t.runs, 3);
+  assert.equal(t.input, 31);
+  assert.equal(t.output, 16);
+  assert.equal(t.total, 149);
+  assert.equal(t.perBrief["01"].runs, 2);
+  assert.equal(t.perBrief["01"].total, 145);
+  assert.equal(t.perBrief["02"].total, 4);
+  assert.ok(Math.abs(t.costUsd - 0.03) < 1e-9);
+});
+
+test("sumUsage: probe entries, null briefs, and junk lines don't break totals", () => {
+  const t = sumUsage([
+    { brief: "probe", input: 5, output: 2, cacheRead: 0, cacheCreate: 0 },
+    { brief: null, input: 1, output: 1, cacheRead: 0, cacheCreate: 0 },
+    null,
+    "junk",
+  ]);
+  assert.equal(t.runs, 2);
+  assert.equal(t.total, 9);
+  assert.equal(t.perBrief["probe"].runs, 1);
+  assert.equal(t.perBrief["-"].runs, 1);
 });

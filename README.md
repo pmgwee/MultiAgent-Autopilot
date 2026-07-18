@@ -29,7 +29,7 @@ Adapted from (orchestrator · advisor · handoff) — the three patterns fused i
 | `skills/phase-kickstart` | Interrogates requirements across 8 domains → `PROJECT-CHARTER.md` → a `handoff/` plan (manifest · contracts · numbered briefs · STATE journal). All architecture is decided here; executors never choose. |
 | `skills/phase-autopilot` | The unattended loop: spawns the CLI model in batches, vets its diffs ("reports are leads, not facts"), re-runs verification itself, reviews the executor's UI evidence, rules on deviations (`ADVISOR.md`), and does the one full hands-on browser pass at final review. Resumable from the manifest's `NEXT:` line — any session, any day. |
 | `skills/uat-runbook` | Turns what genuinely needs a human (bots, webhooks, secrets, deploy clicks) into a TL;DR → Prerequisites → Localhost UAT → Production → Troubleshooting runbook with TC checkboxes. |
-| `scripts/autopilot/glm-run.mjs` | The bridge between your two models: reads your GLM env from cc-switch **per-process** (never flips your global switch), pipes the prompt via **stdin** (Windows-safe), **fails loud — exit 3 — if the answering model isn't GLM** (`MODEL_VERIFIED`), chains up to N consecutive briefs with `--loop N` — **stopping the chain the moment a run fails to advance `NEXT:`** (`LOOP_STALLED`) — and ships `--dry-run` (free wiring check), `--json` (machine-readable results), and its own unit tests. |
+| `scripts/autopilot/glm-run.mjs` | The bridge between your two models: reads your GLM env from cc-switch **per-process** (never flips your global switch), pipes the prompt via **stdin** (Windows-safe), **fails loud — exit 3 — if the answering model isn't GLM** (`MODEL_VERIFIED`), chains up to N consecutive briefs with `--loop N` — **stopping the chain the moment a run fails to advance `NEXT:`** (`LOOP_STALLED`) — and ships `--dry-run` (free wiring check), `--json` (machine-readable results), a per-run **token ledger** (`--usage` sums it per brief), and its own unit tests. |
 
 ## 🔁 The flow
 
@@ -148,6 +148,23 @@ The desktop plan is the scarce resource; the pipeline is shaped so the genius on
 | **UI evidence: screenshots + console captures per UAT note (Playwright)** | Spot-checking 1–2 screenshots per brief |
 | **Runbook draft** (the plan's second-to-last brief) | Runbook **verification** (every command checked against real code) + Notion publish |
 | Chaining briefs (`--loop 3` — one desktop wake-up per batch, not per brief) | Rulings on deviations · **final review with the ONE full browser pass** |
+
+---
+
+## 📊 Token visibility — what did this phase actually burn?
+
+**GLM side (the executor) — measured automatically, exactly.** Every run appends one JSON line to `handoff/logs/usage.jsonl` (tokens in/out, cache read/write, model ids, brief number, duration, runner version) and prints a `TOKENS in=… out=… cache_read=… cache_write=…` line. Nothing to configure. To sum a phase, from the project root:
+
+```bash
+node scripts/autopilot/glm-run.mjs --usage      # per-brief table + grand total (add --json for USAGE_JSON=)
+```
+
+The autopilot's phase-close report includes the same totals. One caveat: the ledger's `cost_usd` is the CLI's as-reported number priced against **Anthropic's** tables — routed through a GLM subscription it is **not** your real bill. Read tokens, not dollars.
+
+**Desktop side (the orchestrator) — your Claude subscription.** A session cannot measure its own tokens, so the pipeline doesn't guess. Two accurate options:
+
+- Claude Code desktop → `/usage` — your plan's live usage, or
+- `npx ccusage` — reads your local `~/.claude/projects` session transcripts and reports exact tokens per day / model / session.
 
 ---
 

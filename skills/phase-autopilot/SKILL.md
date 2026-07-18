@@ -87,8 +87,10 @@ report. Everything else keeps moving.
 ## 2 · Vetting — reports are leads, not facts
 
 The runner prints a contract per run (`GLM_RUN exit= · MODEL_USED= ·
-MODEL_VERIFIED= · RESULT_TAIL · LOG=`; batches end with `LOOP_DONE`). Then,
-per brief:
+MODEL_VERIFIED= · TOKENS · RESULT_TAIL · LOG=`; batches end with
+`LOOP_DONE … tokens=`). Token lines are bookkeeping, not a per-brief
+decision — the ledger (`handoff/logs/usage.jsonl`) accumulates them for the
+phase-close report. Then, per brief:
 
 - `MODEL_VERIFIED=true` and exit 0 — anything else means the diff is
   untrusted output, not a result (ladder).
@@ -174,8 +176,13 @@ The last brief of every plan, and the only thing allowed to declare it done:
    `NEXT: awaiting-user`, never guessed) and continue the loop.
 4. Report: per-brief table (state · commit · model · duration), rulings and
    absorptions with reasons, every `FINDINGS:` line collected from STATE.md
-   (out-of-scope leads — they seed the next kickstart), runbook path, and
-   the `NEXT:` line verbatim.
+   (out-of-scope leads — they seed the next kickstart), **GLM token totals**
+   from `node scripts/autopilot/glm-run.mjs --usage` (per-brief + grand
+   total; quote tokens, not the as-reported cost_usd — that number is priced
+   against Anthropic tables and is not a real GLM bill), runbook path, and
+   the `NEXT:` line verbatim. Your own desktop-side tokens are not
+   self-measurable — tell the user the desktop `/usage` screen or
+   `npx ccusage` has that half.
 
 ## 6 · Top-tier budget discipline
 

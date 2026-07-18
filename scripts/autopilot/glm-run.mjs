@@ -14,6 +14,8 @@
  * Usage (always run from the project root):
  *   node scripts/autopilot/glm-run.mjs --probe
  *   node scripts/autopilot/glm-run.mjs --dry-run
+ *   node scripts/autopilot/glm-run.mjs --usage      # sum the token ledger
+ *   node scripts/autopilot/glm-run.mjs --version
  *   node scripts/autopilot/glm-run.mjs --prompt-file <path> [--loop N]
  *       [--log <path>] [--max-turns 200] [--timeout-min 45] [--safe]
  *       [--provider <regex>] [--expect-model <regex>] [--json]
@@ -42,15 +44,23 @@
  * (RUN_JSON=<json>) and one per invocation (LOOP_JSON=<json>), so callers
  * can parse a single JSON object instead of scraping text lines.
  *
+ * Token accounting: every run appends one JSON line to
+ * handoff/logs/usage.jsonl (tokens in/out, cache read/write, model ids,
+ * brief number, duration, runner version). --usage sums that ledger per
+ * brief and in total. Caveat: cost_usd is the CLI's as-reported number
+ * priced against Anthropic tables — routed through a GLM subscription it
+ * is NOT a real bill; read tokens, not dollars.
+ *
  * Output contract (the orchestrator parses these lines, per run):
  *   GLM_RUN exit=<n> duration_s=<n> turns=<n>
  *   MODEL_USED=<model ids>
  *   MODEL_VERIFIED=<true|false>      false => exit code 3
+ *   TOKENS in=<n> out=<n> cache_read=<n> cache_write=<n>
  *   LOG=<path>
  * plus, when a stall is detected:
  *   LOOP_STALLED brief=<NN> …          (treat that brief as failed vetting)
  * and once per invocation when --loop > 1 (or on a stall):
- *   LOOP_DONE runs=<k> next=<last NEXT line> [stalled=true]
+ *   LOOP_DONE runs=<k> next=<last NEXT line> tokens=<batch total> [stalled=true]
  *
  * Exit codes: 0 ok · 2 usage/config error · 3 model-verification failed ·
  * otherwise the claude CLI's own exit code (of the failing run).
@@ -63,10 +73,12 @@
  *   node --test scripts/autopilot/glm-run.test.mjs
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+export const VERSION = "1.2.0";
 
 // ---------------------------------------------------------------------------
 // Pure helpers — exported for glm-run.test.mjs; no side effects, no I/O.
@@ -115,6 +127,59 @@ export function verifyModels(models, expectRe) {
   return models.length > 0 && models.every((m) => expectRe.test(m));
 }
 
+/**
+ * Pull token counts out of a `claude -p --output-format json` result.
+ * Prefers summing per-model modelUsage values (camelCase CLI shape), falls
+ * back to the top-level usage object (snake_case). Never throws.
+ */
+export function extractUsage(parsed) {
+  const z = { input: 0, output: 0, cacheRead: 0, cacheCreate: 0, costUsd: null };
+  if (!parsed || typeof parsed !== "object") return z;
+  const num = (...vals) => {
+    for (const v of vals) if (typeof v === "number" && Number.isFinite(v)) return v;
+    return 0;
+  };
+  const mu = parsed.modelUsage ? Object.values(parsed.modelUsage) : [];
+  if (mu.length) {
+    for (const m of mu) {
+      z.input += num(m.inputTokens, m.input_tokens);
+      z.output += num(m.outputTokens, m.output_tokens);
+      z.cacheRead += num(m.cacheReadInputTokens, m.cache_read_input_tokens);
+      z.cacheCreate += num(m.cacheCreationInputTokens, m.cache_creation_input_tokens);
+    }
+  } else if (parsed.usage && typeof parsed.usage === "object") {
+    const u = parsed.usage;
+    z.input = num(u.input_tokens, u.inputTokens);
+    z.output = num(u.output_tokens, u.outputTokens);
+    z.cacheRead = num(u.cache_read_input_tokens, u.cacheReadInputTokens);
+    z.cacheCreate = num(u.cache_creation_input_tokens, u.cacheCreationInputTokens);
+  }
+  if (typeof parsed.total_cost_usd === "number") z.costUsd = parsed.total_cost_usd;
+  return z;
+}
+
+/** Aggregate usage.jsonl entries: grand totals + a per-brief breakdown. */
+export function sumUsage(entries) {
+  const t = { runs: 0, input: 0, output: 0, cacheRead: 0, cacheCreate: 0, costUsd: 0, total: 0, perBrief: {} };
+  for (const e of entries || []) {
+    if (!e || typeof e !== "object") continue;
+    t.runs++;
+    t.input += e.input || 0;
+    t.output += e.output || 0;
+    t.cacheRead += e.cacheRead || 0;
+    t.cacheCreate += e.cacheCreate || 0;
+    if (typeof e.costUsd === "number") t.costUsd += e.costUsd;
+    const key = e.brief || "-";
+    const p = (t.perBrief[key] ??= { runs: 0, input: 0, output: 0, total: 0 });
+    p.runs++;
+    p.input += e.input || 0;
+    p.output += e.output || 0;
+    p.total += (e.input || 0) + (e.output || 0) + (e.cacheRead || 0) + (e.cacheCreate || 0);
+  }
+  t.total = t.input + t.output + t.cacheRead + t.cacheCreate;
+  return t;
+}
+
 /** The standard chained-executor prompt for brief nn. */
 export function standardPrompt(nn) {
   return [
@@ -149,6 +214,51 @@ async function main() {
   const loopN = probe ? 1 : Math.max(1, Number(opt("--loop", "1")) || 1);
   const providerRe = new RegExp(opt("--provider", "bigmodel|z\\.ai|zhipu|glm"), "i");
   const expectRe = new RegExp(opt("--expect-model", "glm|zhipu"), "i");
+
+  if (flag("--version")) {
+    console.log("glm-run " + VERSION);
+    return;
+  }
+
+  // ---- --usage: sum the token ledger and exit (no cc-switch needed) ----
+  if (flag("--usage")) {
+    const ledger = resolve("handoff/logs/usage.jsonl");
+    let entries;
+    try {
+      entries = readFileSync(ledger, "utf8")
+        .split("\n")
+        .filter(Boolean)
+        .map((l) => {
+          try {
+            return JSON.parse(l);
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean);
+    } catch {
+      console.error("no token ledger at " + ledger + " — it appears after the first run");
+      process.exit(2);
+    }
+    const t = sumUsage(entries);
+    console.log("GLM token usage — " + t.runs + " runs (ledger: handoff/logs/usage.jsonl)");
+    console.log(
+      "  in=" + t.input + " out=" + t.output +
+        " cache_read=" + t.cacheRead + " cache_write=" + t.cacheCreate,
+    );
+    console.log(
+      "  TOTAL_TOKENS=" + t.total +
+        (t.costUsd
+          ? "  (cost_usd as reported by the CLI, NOT a real GLM bill: " + t.costUsd.toFixed(4) + ")"
+          : ""),
+    );
+    console.log("  per brief:");
+    for (const [b, p] of Object.entries(t.perBrief)) {
+      console.log("    " + b + ": runs=" + p.runs + " in=" + p.input + " out=" + p.output + " total=" + p.total);
+    }
+    if (asJson) console.log("USAGE_JSON=" + JSON.stringify(t));
+    return;
+  }
 
   let initialPrompt;
   if (probe) initialPrompt = "Reply with exactly one line: PROBE_OK";
@@ -218,6 +328,7 @@ async function main() {
   // ---- dry run: show the wiring, spawn nothing, spend nothing ----
   if (dryRun) {
     const info = {
+      version: VERSION,
       provider: provider.name,
       baseURL: provider.env.ANTHROPIC_BASE_URL || "-",
       tokenLen: (provider.env.ANTHROPIC_AUTH_TOKEN || "").length,
@@ -241,7 +352,7 @@ async function main() {
     process.exit(0);
   }
 
-  function runOnce(prompt, runIndex) {
+  function runOnce(prompt, runIndex, briefLabel) {
     const t0 = Date.now();
     const run = spawnSync(cmd, {
       shell: true,
@@ -260,6 +371,7 @@ async function main() {
     } catch {}
     const models = parsed ? Object.keys(parsed.modelUsage || {}) : [];
     const verified = verifyModels(models, expectRe);
+    const usage = extractUsage(parsed);
 
     // ---- log (never contains the token) ----
     const ts = new Date().toISOString().replace(/[:.]/g, "-");
@@ -278,6 +390,8 @@ async function main() {
         "exit: " + run.status + " | duration_s: " + secs +
           " | timedOut: " + (run.error && run.error.code === "ETIMEDOUT" ? "yes" : "no"),
         "models: " + (models.join(", ") || "(none)"),
+        "tokens: in=" + usage.input + " out=" + usage.output +
+          " cache_read=" + usage.cacheRead + " cache_write=" + usage.cacheCreate,
         "",
         "--- PROMPT ---",
         prompt,
@@ -299,6 +413,10 @@ async function main() {
     console.log("GLM_RUN exit=" + run.status + " duration_s=" + secs + " turns=" + (parsed ? parsed.num_turns : "-"));
     console.log("MODEL_USED=" + (models.join(",") || "(none)"));
     console.log("MODEL_VERIFIED=" + verified);
+    console.log(
+      "TOKENS in=" + usage.input + " out=" + usage.output +
+        " cache_read=" + usage.cacheRead + " cache_write=" + usage.cacheCreate,
+    );
     if (run.error) console.log("SPAWN_ERROR=" + String(run.error).slice(0, 200));
     if (parsed && typeof parsed.result === "string") {
       console.log("RESULT_TAIL:");
@@ -318,24 +436,62 @@ async function main() {
             turns: parsed ? (parsed.num_turns ?? null) : null,
             models,
             verified,
+            tokens: {
+              input: usage.input,
+              output: usage.output,
+              cache_read: usage.cacheRead,
+              cache_write: usage.cacheCreate,
+            },
+            cost_usd: usage.costUsd,
             log: logPath,
             spawn_error: run.error ? String(run.error).slice(0, 200) : null,
           }),
       );
     }
 
-    return { status: run.status, verified };
+    // ---- append-only token ledger (one JSON line per run) ----
+    const ledgerPath = resolve("handoff", "logs", "usage.jsonl");
+    mkdirSync(dirname(ledgerPath), { recursive: true });
+    appendFileSync(
+      ledgerPath,
+      JSON.stringify({
+        ts,
+        version: VERSION,
+        run: runIndex,
+        brief: briefLabel ?? null,
+        models,
+        input: usage.input,
+        output: usage.output,
+        cacheRead: usage.cacheRead,
+        cacheCreate: usage.cacheCreate,
+        costUsd: usage.costUsd,
+        exit: run.status,
+        verified,
+        duration_s: Number(secs),
+      }) + "\n",
+      "utf8",
+    );
+
+    return { status: run.status, verified, usage };
   }
 
   let prompt = initialPrompt;
   let prevNN = briefFromPrompt(initialPrompt); // null for probe / custom prompts
+  let briefLabel = prevNN ?? (probe ? "probe" : null);
   let runs = 0;
   let last = { status: 0, verified: true };
   let lastNext = "-";
   let stalled = false;
+  const batch = { input: 0, output: 0, cache_read: 0, cache_write: 0 };
   while (runs < loopN) {
-    last = runOnce(prompt, runs + 1);
+    last = runOnce(prompt, runs + 1, briefLabel);
     runs++;
+    if (last.usage) {
+      batch.input += last.usage.input;
+      batch.output += last.usage.output;
+      batch.cache_read += last.usage.cacheRead;
+      batch.cache_write += last.usage.cacheCreate;
+    }
     if (last.status !== 0 || !last.verified) break;
     const nb = readManifestNext();
     lastNext = nb.nextLine;
@@ -353,17 +509,27 @@ async function main() {
     if (!nb.nn) break; // NEXT no longer names a brief (review / re-plan / awaiting-user)
     console.log("LOOP_NEXT brief " + nb.nn);
     prevNN = nb.nn;
+    briefLabel = nb.nn;
     prompt = standardPrompt(nb.nn);
   }
+  const batchTotal = batch.input + batch.output + batch.cache_read + batch.cache_write;
   if (loopN > 1 || stalled) {
     console.log(
-      "LOOP_DONE runs=" + runs + " next=" + JSON.stringify(lastNext) + (stalled ? " stalled=true" : ""),
+      "LOOP_DONE runs=" + runs + " next=" + JSON.stringify(lastNext) +
+        " tokens=" + batchTotal + (stalled ? " stalled=true" : ""),
     );
   }
   if (asJson) {
     console.log(
       "LOOP_JSON=" +
-        JSON.stringify({ runs, next: lastNext, stalled, exit: last.status, verified: last.verified }),
+        JSON.stringify({
+          runs,
+          next: lastNext,
+          stalled,
+          exit: last.status,
+          verified: last.verified,
+          tokens: { ...batch, total: batchTotal },
+        }),
     );
   }
 
