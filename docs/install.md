@@ -1,6 +1,6 @@
-# MultiAgent-Autopilot — agent install guide
+# Multi-Agent-Autopilot — agent install guide
 
-You are an AI coding agent installing the **MultiAgent-Autopilot** skill
+You are an AI coding agent installing the **Multi-Agent-Autopilot** skill
 suite for your user. Follow the steps in order; ask the user before anything
 ambiguous; report real command output, never assumed success.
 
@@ -24,11 +24,11 @@ ambiguous; report real command output, never assumed success.
 ## 2 · Get the code
 
 ```bash
-git clone https://github.com/pmgwee/MultiAgent-Autopilot
+git clone https://github.com/pmgwee/Multi-Agent-Autopilot
 ```
 
 No git? Download and unzip:
-`https://github.com/pmgwee/MultiAgent-Autopilot/archive/refs/heads/main.zip`
+`https://github.com/pmgwee/Multi-Agent-Autopilot/archive/refs/heads/main.zip`
 
 ## 3 · Copy files
 

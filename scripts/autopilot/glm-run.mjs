@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * glm-run.mjs — headless GLM executor runner for the phase-autopilot skill
- * (part of MultiAgent-Autopilot).
+ * (part of Multi-Agent-Autopilot).
  *
  * Spawns the user's GLM-backed Claude Code CLI (`claude -p`) with the GLM
  * provider env read from cc-switch (~/.cc-switch/cc-switch.db), injected

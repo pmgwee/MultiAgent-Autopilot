@@ -1,6 +1,6 @@
 [English](README.md) | **简体中文**
 
-# 🤖 MultiAgent Autopilot — Claude Code 的自动驾驶 phase 管线
+# 🤖 Multi-Agent Autopilot — Claude Code 的自动驾驶 phase 管线
 
 > **一句话 TL;DR** — 你只需把需求**描述一次**。顶级模型对你做访谈、锁定一份 charter、写出自防御的执行计划。一个便宜的 CLI 模型(你 cc-switch 里的 provider,比如 GLM)**无头**实现每一个 brief —— 包括用截图亲自证明自己的 UI 成果 —— 而顶级 session 负责审查 diff、重跑验证、复核证据。你回来时面对的是一个已完成的 phase 和一份手把手教你测的 UAT runbook。
 > **你只出现两次:需求访谈,以及最后的人工配置 + 验收。**
@@ -65,8 +65,8 @@ requirements ─► /phase-kickstart   (你回答一次问题 → charter + hand
 把这一句 prompt 贴进 Claude Code(desktop 或 CLI,任何有文件 + shell 权限的 agent):
 
 ```
-Help me install the MultiAgent-Autopilot skills:
-https://raw.githubusercontent.com/pmgwee/MultiAgent-Autopilot/main/docs/install.md
+Help me install the Multi-Agent-Autopilot skills:
+https://raw.githubusercontent.com/pmgwee/Multi-Agent-Autopilot/main/docs/install.md
 ```
 
 agent 读完这份指南,问你两个问题(skills 装全局还是某个项目?runner 装进哪个项目?),复制好所有文件,再跑探针验线。
@@ -74,18 +74,18 @@ agent 读完这份指南,问你两个问题(skills 装全局还是某个项目?r
 
 ### 方式 B — 手动(5 分钟)
 
-- [ ] **1. 拿到代码** — `git clone https://github.com/pmgwee/MultiAgent-Autopilot`,或点 **Code → Download ZIP** 解压。
+- [ ] **1. 拿到代码** — `git clone https://github.com/pmgwee/Multi-Agent-Autopilot`,或点 **Code → Download ZIP** 解压。
 
 - [ ] **2. 复制 skills** — 装全局(所有项目可用)或装进某个项目的 `.claude/skills/`:
 
 ```bash
 # macOS / Linux / Git Bash — 全局:
-cp -r MultiAgent-Autopilot/skills/* ~/.claude/skills/
+cp -r Multi-Agent-Autopilot/skills/* ~/.claude/skills/
 ```
 
 ```powershell
 # Windows PowerShell — 全局:
-Copy-Item -Recurse MultiAgent-Autopilot\skills\* "$env:USERPROFILE\.claude\skills\"
+Copy-Item -Recurse Multi-Agent-Autopilot\skills\* "$env:USERPROFILE\.claude\skills\"
 ```
 
 - [ ] **3. 把 runner 复制进【每一个】要跑这条管线的项目** —— 无头执行者 session 以那个项目根目录启动,日志和 commit 都归属那个 repo,所以 runner 必须放在项目里:
@@ -93,13 +93,13 @@ Copy-Item -Recurse MultiAgent-Autopilot\skills\* "$env:USERPROFILE\.claude\skill
 ```bash
 # macOS / Linux / Git Bash:
 mkdir -p <你的项目>/scripts/autopilot
-cp MultiAgent-Autopilot/scripts/autopilot/glm-run.mjs <你的项目>/scripts/autopilot/
+cp Multi-Agent-Autopilot/scripts/autopilot/glm-run.mjs <你的项目>/scripts/autopilot/
 ```
 
 ```powershell
 # Windows PowerShell:
 New-Item -ItemType Directory -Force <你的项目>\scripts\autopilot
-Copy-Item MultiAgent-Autopilot\scripts\autopilot\glm-run.mjs <你的项目>\scripts\autopilot\
+Copy-Item Multi-Agent-Autopilot\scripts\autopilot\glm-run.mjs <你的项目>\scripts\autopilot\
 ```
 
 - [ ] **4. 零成本验线**(免费 —— 只解析 provider、打印将会执行什么;不 spawn、不花任何 token):

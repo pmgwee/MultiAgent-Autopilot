@@ -1,9 +1,17 @@
 # Changelog
 
-The runner prints its version with `node scripts/autopilot/glm-run.mjs --version`.
+The runner prints its version with `node scripts/autopilot/glm-run.mjs --version`
+(currently 1.2.0 — the runner's own version wasn't bumped for the 1.2.1 rename,
+since it changed no runner behavior).
 Projects carry their own copy of the runner — if a project's `--version` is
 older than this file's top entry, re-copy `scripts/autopilot/glm-run.mjs`
 (and the skills) from this repo.
+
+## 1.2.1 — 2026-07-18
+
+- Renamed everywhere: MultiAgent-Autopilot → Multi-Agent-Autopilot (GitHub
+  repo renamed; the old name still resolves via GitHub's redirect, but all
+  links/clone commands in this repo now point at the hyphenated name).
 
 ## 1.2.0 — 2026-07-18
 

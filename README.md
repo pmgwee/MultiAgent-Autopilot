@@ -1,6 +1,6 @@
  **English** | [简体中文](README.zh-CN.md)
 
-# 🤖 MultiAgent Autopilot — a self-driving phase pipeline for Claude Code
+# 🤖 Multi-Agent Autopilot — a self-driving phase pipeline for Claude Code
 
 > **TL;DR** — You describe the requirements **once**. A top-tier model interviews you, locks a charter, and writes a self-defending plan. A cheaper CLI model (your cc-switch provider, e.g. GLM) implements every brief **headless** — including proving its own UI work with screenshots — while the top-tier session vets diffs, re-runs verification, and reviews the evidence. You come back to a finished phase and a step-by-step UAT runbook.
 > **You appear exactly twice: the requirements interview, and the final manual setup + review.**
@@ -65,8 +65,8 @@ The two models never share chat memory — **the repo is the shared memory** (ch
 Paste this one prompt into Claude Code (desktop or CLI — any agent with file + shell access):
 
 ```
-Help me install the MultiAgent-Autopilot skills:
-https://raw.githubusercontent.com/pmgwee/MultiAgent-Autopilot/main/docs/install.md
+Help me install the Multi-Agent-Autopilot skills:
+https://raw.githubusercontent.com/pmgwee/Multi-Agent-Autopilot/main/docs/install.md
 ```
 
 The agent reads the guide, asks you two questions (global or per-project skills? which project gets the runner?), copies everything, and probes the wiring.
@@ -74,18 +74,18 @@ The agent reads the guide, asks you two questions (global or per-project skills?
 
 ### Option B — manual (5 minutes)
 
-- [ ] **1. Get the code** — `git clone https://github.com/pmgwee/MultiAgent-Autopilot`, or **Code → Download ZIP** and unzip it.
+- [ ] **1. Get the code** — `git clone https://github.com/pmgwee/Multi-Agent-Autopilot`, or **Code → Download ZIP** and unzip it.
 
 - [ ] **2. Copy the skills** — global (all projects) or into one project's `.claude/skills/`:
 
 ```bash
 # macOS / Linux / Git Bash — global:
-cp -r MultiAgent-Autopilot/skills/* ~/.claude/skills/
+cp -r Multi-Agent-Autopilot/skills/* ~/.claude/skills/
 ```
 
 ```powershell
 # Windows PowerShell — global:
-Copy-Item -Recurse MultiAgent-Autopilot\skills\* "$env:USERPROFILE\.claude\skills\"
+Copy-Item -Recurse Multi-Agent-Autopilot\skills\* "$env:USERPROFILE\.claude\skills\"
 ```
 
 - [ ] **3. Copy the runner into EACH project that will use the pipeline** — the headless executor session starts in that project's root, and its logs/commits belong to that repo, so the runner lives inside the project:
@@ -93,13 +93,13 @@ Copy-Item -Recurse MultiAgent-Autopilot\skills\* "$env:USERPROFILE\.claude\skill
 ```bash
 # macOS / Linux / Git Bash:
 mkdir -p <your-project>/scripts/autopilot
-cp MultiAgent-Autopilot/scripts/autopilot/glm-run.mjs <your-project>/scripts/autopilot/
+cp Multi-Agent-Autopilot/scripts/autopilot/glm-run.mjs <your-project>/scripts/autopilot/
 ```
 
 ```powershell
 # Windows PowerShell:
 New-Item -ItemType Directory -Force <your-project>\scripts\autopilot
-Copy-Item MultiAgent-Autopilot\scripts\autopilot\glm-run.mjs <your-project>\scripts\autopilot\
+Copy-Item Multi-Agent-Autopilot\scripts\autopilot\glm-run.mjs <your-project>\scripts\autopilot\
 ```
 
 - [ ] **4. Dry-run the wiring** (free — resolves the provider and prints exactly what would run; spawns nothing, spends nothing):
